@@ -5,7 +5,7 @@ import LyricsDisplay from './components/LyricsDisplay';
 import UploadModal from './components/UploadModal';
 import DebugPanel from './components/DebugPanel';
 import VideoExporter from './components/VideoExporter';
-import { Track } from './types';
+import { Track, LyricLine } from './types';
 import { processLyricsWithGemini } from './services/geminiService';
 import { blobToBase64 } from './utils';
 
@@ -102,27 +102,36 @@ const App: React.FC = () => {
      }
   };
 
-  // Function to update a specific lyric line timestamp
+  // Function to update a specific lyric line timestamp and shift subsequent lines (Ripple Edit)
   const handleLyricUpdate = (trackId: string, lineIndex: number, newTime: number) => {
+    // Helper to handle the ripple edit logic
+    const applyRippleEdit = (currentLyrics: LyricLine[]): LyricLine[] => {
+        const targetLine = currentLyrics[lineIndex];
+        if (!targetLine) return currentLyrics;
+        
+        const timeDiff = newTime - targetLine.time;
+        if (Math.abs(timeDiff) < 0.001) return currentLyrics; // optimize no-op
+
+        return currentLyrics.map((line, idx) => {
+            // Only affect the target line and subsequent lines
+            if (idx >= lineIndex) {
+                return { ...line, time: Math.max(0, line.time + timeDiff) };
+            }
+            return line;
+        });
+    };
+
     // 1. Update in the main tracks list
     setTracks(prevTracks => prevTracks.map(t => {
         if (t.id !== trackId) return t;
-        const newLyrics = [...t.lyrics];
-        if (newLyrics[lineIndex]) {
-            newLyrics[lineIndex] = { ...newLyrics[lineIndex], time: Math.max(0, newTime) };
-        }
-        return { ...t, lyrics: newLyrics };
+        return { ...t, lyrics: applyRippleEdit(t.lyrics) };
     }));
 
     // 2. Update current track if it's the one being edited
     if (currentTrack?.id === trackId) {
         setCurrentTrack(prev => {
             if (!prev) return null;
-            const newLyrics = [...prev.lyrics];
-            if (newLyrics[lineIndex]) {
-                newLyrics[lineIndex] = { ...newLyrics[lineIndex], time: Math.max(0, newTime) };
-            }
-            return { ...prev, lyrics: newLyrics };
+            return { ...prev, lyrics: applyRippleEdit(prev.lyrics) };
         });
     }
   };
