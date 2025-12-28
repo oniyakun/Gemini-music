@@ -1,0 +1,7 @@
+{
+  "name": "Gemini Music",
+  "description": "An Apple Music-inspired web player that uses Gemini to intelligently parse, translate, and time-sync raw lyrics for an immersive playback experience.",
+  "requestFramePermissions": [
+    "display-capture"
+  ]
+}
