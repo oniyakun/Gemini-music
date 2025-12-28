@@ -291,6 +291,7 @@ const App: React.FC = () => {
             onClose={() => setShowVideoExport(false)}
             onRecordingStart={() => setIsRecording(true)}
             onRecordingEnd={() => setIsRecording(false)}
+            onTimeUpdate={(time) => setCurrentTime(time)} // Sync for lyrics
         />
       )}
 

@@ -7,13 +7,15 @@ interface VideoExporterProps {
   onClose: () => void;
   onRecordingStart: () => void;
   onRecordingEnd: () => void;
+  onTimeUpdate: (time: number) => void; // New prop to sync UI
 }
 
 const VideoExporter: React.FC<VideoExporterProps> = ({ 
   track, 
   onClose,
   onRecordingStart,
-  onRecordingEnd
+  onRecordingEnd,
+  onTimeUpdate
 }) => {
   const [status, setStatus] = useState<'idle' | 'waiting_for_user' | 'recording' | 'saving'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,7 @@ const VideoExporter: React.FC<VideoExporterProps> = ({
     }
     if (audioElRef.current) {
         audioElRef.current.pause();
+        audioElRef.current.ontimeupdate = null; // Remove listener
         audioElRef.current.src = "";
     }
   };
@@ -72,6 +75,12 @@ const VideoExporter: React.FC<VideoExporterProps> = ({
         const audio = new Audio();
         audio.crossOrigin = "anonymous";
         audio.src = track.audioUrl;
+        
+        // CRITICAL FIX: Sync the time back to the UI so lyrics scroll during recording
+        audio.ontimeupdate = () => {
+            onTimeUpdate(audio.currentTime);
+        };
+
         audioElRef.current = audio;
 
         // Connect Audio Element -> MediaStreamDestination
